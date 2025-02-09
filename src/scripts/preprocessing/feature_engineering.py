@@ -71,8 +71,8 @@ def add_season_context(df: pd.DataFrame) -> pd.DataFrame:
     """Add season context features."""
     df_context = df.copy()
     
-    # COVID-impacted seasons
-    df_context['is_covid_season'] = df_context['Season'].isin([2020, 2021])
+    # COVID-impacted seasons (convert boolean to int)
+    df_context['is_covid_season'] = df_context['Season'].isin([2020, 2021]).astype(int)
     
     # Games played relative to typical season
     df_context['games_played_ratio'] = df_context['G'] / df_context.groupby('Season')['G'].transform('max')

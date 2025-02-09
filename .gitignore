@@ -80,3 +80,5 @@ logs/
 .env
 .python-version
 uv.lock
+
+!src/data/analysis/*.json

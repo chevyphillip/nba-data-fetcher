@@ -17,11 +17,12 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.impute import SimpleImputer
 import joblib
+
+from src.scripts.modeling.custom_models import ScaledGradientBoostingRegressor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -94,6 +95,16 @@ def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
     if dropped_cols:
         logger.warning(f"Dropped non-numeric columns: {dropped_cols}")
     
+    # Drop columns with too many missing values
+    missing_pct = numeric_df.isnull().mean()
+    too_many_missing = missing_pct[missing_pct > 0.5].index
+    if len(too_many_missing) > 0:
+        logger.warning(f"Dropping columns with >50% missing values: {too_many_missing}")
+        numeric_df = numeric_df.drop(columns=too_many_missing)
+    
+    # Fill remaining missing values with 0
+    numeric_df = numeric_df.fillna(0)
+    
     return numeric_df
 
 def split_data(df: pd.DataFrame, target_col: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
@@ -113,13 +124,18 @@ def split_data(df: pd.DataFrame, target_col: str) -> Tuple[pd.DataFrame, pd.Data
     
     return X_train, X_valid, y_train, y_valid
 
+
+
 def create_pipeline(params: Dict) -> Pipeline:
     """Create a scikit-learn pipeline for preprocessing and modeling."""
     return Pipeline([
-        ('imputer', SimpleImputer(strategy='mean')),  # Remove add_indicator
+        ('imputer', SimpleImputer(strategy='mean')),
         ('scaler', StandardScaler()),
-        ('regressor', GradientBoostingRegressor(
+        ('regressor', ScaledGradientBoostingRegressor(
             random_state=42,
+            validation_fraction=0.1,
+            n_iter_no_change=5,
+            tol=1e-4,
             **params
         ))
     ])
@@ -169,23 +185,41 @@ def train_model(
     for _, row in importance.head(10).iterrows():
         logger.info(f"{row['feature']}: {row['importance']:.2%}")
     
-    return pipeline, metrics
+    return pipeline, metrics, X_train.columns.tolist()
 
-def save_model(pipeline: Pipeline, target: str, metrics: Dict):
+def save_model(pipeline: Pipeline, target: str, metrics: Dict, feature_names: List[str]):
     """Save trained model and its metrics."""
     # Create models directory if it doesn't exist
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     
-    # Save model
+    # Save model and target transformer
     current_date = datetime.now().strftime("%Y%m%d")
     model_file = MODELS_DIR / f"{target}_model_{current_date}.joblib"
     joblib.dump(pipeline, model_file)
+    
+    # Save target transformer
+    target_transformer = pipeline.named_steps['regressor'].target_transformer
+    transformer_file = MODELS_DIR / f"{target}_transformer_{current_date}.joblib"
+    joblib.dump(target_transformer, transformer_file)
+    
+    # Save feature importances
+    model = pipeline.named_steps['regressor'].regressor
+    importance = pd.DataFrame({
+        'feature': feature_names,
+        'importance': model.feature_importances_
+    }).sort_values('importance', ascending=False)
+    importance_file = MODELS_DIR / f"{target}_importance_{current_date}.json"
+    importance.to_json(importance_file)
     
     # Save metrics
     metrics_file = MODELS_DIR / f"{target}_metrics_{current_date}.json"
     pd.Series(metrics).to_json(metrics_file)
     
-    logger.info(f"Model and metrics saved to {MODELS_DIR}")
+    # Save feature names
+    feature_names_file = MODELS_DIR / f"{target}_feature_names_{current_date}.joblib"
+    joblib.dump(feature_names, feature_names_file)
+    
+    logger.info(f"Model, transformer, and metrics saved to {MODELS_DIR}")
 
 def main():
     """Main execution function."""
@@ -201,10 +235,10 @@ def main():
                 X_train, X_valid, y_train, y_valid = split_data(df, info['col'])
                 
                 # Train and evaluate model
-                pipeline, metrics = train_model(X_train, y_train, X_valid, y_valid, target)
+                pipeline, metrics, feature_names = train_model(X_train, y_train, X_valid, y_valid, target)
                 
                 # Save model and metrics
-                save_model(pipeline, target, metrics)
+                save_model(pipeline, target, metrics, feature_names)
                 
             except Exception as e:
                 logger.error(f"Error training model for {target}: {e}")
