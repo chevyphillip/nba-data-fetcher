@@ -1,14 +1,16 @@
-# NBA Stats Predictor
+# NBA Data Fetcher and Predictor
 
-A machine learning pipeline for predicting NBA player statistics using H2O AutoML. This system processes historical NBA data and generates predictions for points, rebounds, assists, and three-pointers using advanced feature engineering and time series cross-validation.
+A machine learning system for NBA player statistics prediction and prop bet analysis.
 
-## Overview
+## Project Overview
 
-The NBA Stats Predictor uses a sophisticated pipeline to:
-1. Collect historical NBA player statistics from basketball-reference.com
-2. Engineer advanced features including rolling averages and position-specific indicators
-3. Train and evaluate models using H2O AutoML with time series cross-validation
-4. Generate comprehensive performance metrics and visualizations
+This project implements a complete pipeline for:
+
+1. Collecting NBA player statistics
+2. Processing and engineering features
+3. Training prediction models
+4. Analyzing betting propositions
+5. Visualizing results and insights
 
 ## Project Structure
 
@@ -16,69 +18,65 @@ The NBA Stats Predictor uses a sophisticated pipeline to:
 nba-data-fetcher/
 ├── src/
 │   ├── data/
-│   │   ├── raw/          # Raw NBA statistics
-│   │   └── processed/    # Enhanced feature sets
-│   ├── docs/
-│   │   ├── technical_docs.md    # Technical documentation
-│   │   ├── user_guide.md        # User guide
-│   │   └── maintenance_guide.md # Maintenance guide
-│   ├── models/                  # Trained models and metrics
-│   │   ├── {stat}_all_metrics.csv   # Performance metrics
-│   │   ├── {stat}_cv_results.png    # CV visualizations
-│   │   └── best_{stat}_model/       # Saved models
+│   │   ├── raw/              # Raw NBA statistics data
+│   │   ├── cleaned/          # Cleaned and preprocessed data
+│   │   ├── features/         # Feature-engineered datasets
+│   │   └── analysis/         # Prop analysis results
+│   │
+│   ├── models/              # Trained models and metrics
+│   │   ├── {stat}_model_YYYYMMDD.joblib
+│   │   ├── {stat}_metrics_YYYYMMDD.json
+│   │   └── feature_groups.joblib
+│   │
+│   ├── docs/               # Documentation
+│   │   ├── technical_docs.md
+│   │   ├── model_performance.md
+│   │   └── data_cleaning_validation_steps.md
+│   │
 │   └── scripts/
-│       ├── data_collection/
-│       │   └── nba_historical_stats_fetcher.py  # Data collection
-│       ├── preprocessing/
-│       │   └── enhance_features.py              # Feature engineering
-│       └── modeling/
-│           └── train_multistat_models.py        # Model training
-├── pyproject.toml    # Project dependencies
-└── README.md        # Project documentation
+│       ├── data_collection/  # Data fetching scripts
+│       │   └── nba_historical_stats_fetcher.py
+│       │
+│       ├── preprocessing/    # Data processing scripts
+│       │   ├── clean_raw_data.py
+│       │   └── feature_engineering.py
+│       │
+│       ├── modeling/        # Model training scripts
+│       │   ├── train_and_save_models.py
+│       │   └── custom_models.py
+│       │
+│       ├── analysis/        # Analysis scripts
+│       │   └── prop_analyzer.py
+│       │
+│       ├── visualization/   # Visualization tools
+│       │   ├── feature_importance.py
+│       │   ├── model_metrics.py
+│       │   └── model_visualizations.py
+│       │
+│       ├── odds/           # Odds API integration
+│       │   └── odds_api.py
+│       │
+│       └── run_pipeline.py  # Main pipeline script
+│
+├── requirements.txt        # Python dependencies
+├── pyproject.toml         # Project configuration
+└── .env                   # Environment variables (not in repo)
 ```
 
-## Features
+## Model Performance
 
-### Data Collection
-- Automated scraping from basketball-reference.com
-- Rate-limited requests with rotating user agents
-- Comprehensive player statistics from 2010-2024
+Current model performance metrics (as of February 9, 2025):
 
-### Feature Engineering
-- 26 carefully selected features including:
-  - Core player attributes (age, position, minutes played)
-  - Rolling averages (5-game window)
-  - Advanced metrics (TS%, eFG%, AST/TO ratio)
-  - Position-specific indicators
+| Statistic     | R² Score | RMSE  | MAE    |
+|--------------|----------|--------|--------|
+| Points       | 0.907    | 0.875  | 0.266  |
+| Rebounds     | 0.815    | 0.670  | 0.169  |
+| Assists      | 0.888    | 0.196  | 0.057  |
+| Three-Points | 0.913    | 0.071  | 0.022  |
 
-### Model Training
-- H2O AutoML for automated model selection
-- Time series cross-validation
-- Feature importance analysis
-- Performance visualization
+For detailed model analysis, see [Model Performance Documentation](src/docs/model_performance.md).
 
-### Predictions
-- Points per Game (PTS): RMSE ≈ 0.052
-- Rebounds per Game (TRB)
-- Assists per Game (AST)
-- Three Pointers Made (3P): RMSE ≈ 0.30
-
-## Requirements
-
-- Python >= 3.11.11
-- Dependencies:
-  - beautifulsoup4 >= 4.13.3
-  - pandas >= 2.2.3
-  - requests >= 2.32.3
-  - fake-useragent >= 1.4.0
-  - lxml >= 5.1.0
-  - h2o >= 3.46.0.6
-  - scikit-learn
-  - matplotlib
-  - seaborn
-  - numpy
-
-## Installation
+## Setup and Installation
 
 1. Clone the repository:
 
@@ -87,199 +85,73 @@ git clone https://github.com/yourusername/nba-data-fetcher.git
 cd nba-data-fetcher
 ```
 
-2. Install dependencies:
+2. Create and activate a virtual environment:
 
 ```bash
-pip install -e .
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-## Pipeline Execution Order
-
-Follow these steps to run the complete pipeline:
-
-### 1. Data Collection
+3. Install dependencies:
 
 ```bash
+pip install -r requirements.txt
+```
+
+4. Create a .env file with required API keys:
+
+```
+ODDS_API_KEY=your_key_here
+```
+
+## Usage
+
+1. Run the complete pipeline:
+
+```bash
+python src/scripts/run_pipeline.py
+```
+
+2. Run individual components:
+
+```bash
+# Data collection
 python src/scripts/data_collection/nba_historical_stats_fetcher.py
-```
 
-This script:
+# Data cleaning
+python src/scripts/preprocessing/clean_raw_data.py
 
-- Fetches NBA player statistics from 2010 to 2024
-- Collects multiple statistical categories (totals, per game, advanced, etc.)
-- Saves raw data to `src/data/raw/`
-
-### 2. Data Cleaning
-
-```bash
-python src/scripts/preprocessing/clean_nba_stats.py
-```
-
-This script:
-
-- Selects relevant columns
-- Handles missing values
-- Standardizes column names
-- Adds derived statistics
-- Saves cleaned data to `src/data/processed/`
-
-### 3. Feature Engineering
-
-```bash
-python src/scripts/preprocessing/enhance_features.py
-```
-
-This script:
-
-- Creates rolling averages for key statistics (5-game window)
-- Generates position-specific indicators
-- Calculates advanced metrics (TS%, eFG%, AST/TO ratio)
-- Produces a simplified, high-impact feature set (26 features)
-
-### 4. Model Training
-
-```bash
-python src/scripts/modeling/train_multistat_models.py
-```
-
-This script trains models to predict multiple player statistics:
-
-- Points per Game (PTS)
-- Rebounds per Game (TRB)
-- Assists per Game (AST)
-- Three Pointers Made (3P)
-
-Key features:
-- Uses H2O AutoML for automated model selection and tuning
-- Implements time series cross-validation for robust evaluation
-- Generates feature importance analysis for each statistic
-- Produces performance metrics and visualization plots
-- Encodes categorical variables
-- Saves preprocessed data to `src/data/processed/`
-
-### 4. Feature Engineering
-
-```bash
+# Feature engineering
 python src/scripts/preprocessing/feature_engineering.py
+
+# Model training
+python src/scripts/modeling/train_and_save_models.py
+
+# Prop analysis
+python src/scripts/analysis/prop_analyzer.py
 ```
 
-This script:
+## Key Features
 
-- Calculates rolling averages
-- Adds opponent-specific adjustments
-- Creates performance trends
-- Generates season-level aggregations
-- Saves engineered features to `src/data/processed/`
+- Comprehensive NBA statistics collection
+- Advanced feature engineering
+- Gradient Boosting models with optimized feature selection
+- Time series cross-validation
+- Prop bet edge analysis
+- Performance visualization tools
 
-### 5. ML Data Preparation
+## Recent Improvements
 
-```bash
-python src/scripts/preprocessing/prepare_ml_data.py
-```
-
-This script:
-
-- Performs feature selection
-- Analyzes feature importance
-- Splits data into train/validation/test sets
-- Saves ML-ready datasets to `src/data/processed/`
-
-### 6. Model Training
-
-You can choose between two training approaches:
-
-#### Traditional ML Models
-
-```bash
-python src/scripts/modeling/train_models.py
-```
-
-This trains:
-
-- Linear Regression
-- Ridge Regression
-- Lasso Regression
-- Random Forest
-- XGBoost
-- SVR
-
-#### H2O AutoML
-
-```bash
-python src/scripts/modeling/train_automl.py
-```
-
-This automatically:
-
-- Tries multiple algorithms
-- Performs hyperparameter tuning
-- Selects the best model
-- Saves model artifacts to `src/models/`
-
-### 7. Visualization
-
-```bash
-python src/scripts/visualization/visualize_results.py
-```
-
-This creates:
-
-- Model performance comparisons
-- Feature importance plots
-- Prediction error analysis
-- Player performance trends
-
-## Data Description
-
-The collected and processed data includes:
-
-### Raw Data Features
-
-- Basic statistics (points, rebounds, assists, etc.)
-- Advanced metrics (true shooting %, efficiency, etc.)
-- Per game and per minute statistics
-- Shooting percentages and distributions
-
-### Engineered Features
-
-- Rolling averages over different game windows
-- Performance trends and momentum indicators
-- Opponent-adjusted statistics
-- Season-level aggregations
-
-### Target Variable
-
-- Points (PTS) - The primary prediction target
-
-## Model Outputs
-
-The models generate several outputs in `src/models/`:
-
-- Trained model files
-- Performance metrics (RMSE, R², MAE)
-- Feature importance rankings
-- Predictions on test set
-- Model comparison results
-
-## Visualization Outputs
-
-The visualization script generates plots in `src/plots/`:
-
-- Model performance comparisons
-- Feature importance charts
-- Prediction accuracy plots
-- Error distribution analysis
-- Player trend visualizations
+- Optimized feature selection using gradient boosting importance
+- Enhanced preprocessing pipeline with robust scaling
+- Improved handling of categorical variables
+- Reduced training time with optimized number of trials (20)
+- Implementation of mean threshold for feature selection
 
 ## Contributing
 
-Feel free to submit issues, fork the repository, and create pull requests for any improvements.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
 
 ## License
 
-[Your chosen license]
-
-## Acknowledgments
-
-- Data sourced from [Basketball Reference](https://www.basketball-reference.com/)
-- Built with Python, pandas, scikit-learn, and H2O AutoML
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

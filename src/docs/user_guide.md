@@ -2,11 +2,12 @@
 
 ## Overview
 
-The NBA Stats Predictor is a machine learning tool that predicts various basketball statistics for NBA players. This guide will help you understand how to use the system effectively.
+The NBA Stats Predictor is a machine learning tool that predicts various basketball statistics for NBA players using Gradient Boosting Regression. This guide will help you understand how to use the system effectively.
 
 ## Setup
 
 1. **Environment Setup**
+
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
@@ -14,211 +15,218 @@ The NBA Stats Predictor is a machine learning tool that predicts various basketb
    ```
 
 2. **Directory Structure**
-   - Ensure all required directories exist:
-     ```bash
-     mkdir -p src/data/{raw,cleaned,features}
-     mkdir -p src/models
-     ```
 
-## Using the Predictor
+   ```bash
+   mkdir -p src/data/{raw,cleaned,features,analysis}
+   mkdir -p src/models
+   ```
+
+## Running the Pipeline
 
 ### 1. Data Collection
+
 ```bash
-cd src/scripts/data
-python nba_historical_stats_fetcher.py
+python src/scripts/data_collection/nba_historical_stats_fetcher.py
 ```
 
-### 2. Data Processing
+This script:
+
+- Fetches NBA player statistics with retry mechanism
+- Implements rate limiting and user agent rotation
+- Saves raw data to `src/data/raw/`
+- Logs collection progress and errors
+
+### 2. Data Cleaning
+
 ```bash
-python clean_raw_data.py
-python feature_engineering.py
+python src/scripts/preprocessing/clean_raw_data.py
 ```
 
-### 3. Model Training
+This script:
+
+- Removes duplicates and invalid entries
+- Handles missing values through imputation
+- Standardizes column names and formats
+- Validates data types and ranges
+- Saves cleaned data to `src/data/cleaned/`
+
+### 3. Feature Engineering
+
 ```bash
-cd ../modeling
-python train_models.py
+python src/scripts/preprocessing/feature_engineering.py
 ```
 
-### 4. Viewing Model Performance
+This script:
+
+- Creates rolling averages (5, 10, 15-game windows)
+- Calculates advanced efficiency metrics
+- Generates position-specific features
+- Adds matchup-based adjustments
+- Saves engineered features to `src/data/features/`
+
+### 4. Model Training
+
 ```bash
-cd ../visualization
-python model_metrics.py
+python src/scripts/modeling/train_and_save_models.py
 ```
 
-## Understanding the Results
+This script:
 
-### Model Performance Metrics
+- Trains Gradient Boosting models for each statistic
+- Optimizes hyperparameters using Optuna
+- Implements time series cross-validation
+- Generates performance metrics and visualizations
+- Saves models and metrics to `src/models/`
 
-The system generates two main visualization plots:
+### 5. Prop Analysis
 
-1. **R² Score Comparison** (`model_r2_comparison.png`)
-   - Shows how well each model predicts its target statistic
-   - Scale: 0 to 1 (higher is better)
-   - Current performance:
-     - Points: 0.96 (96% accuracy)
-     - Rebounds: 0.89 (89% accuracy)
-     - Assists: 0.82 (82% accuracy)
-     - 3-Pointers: 0.88 (88% accuracy)
+```bash
+python src/scripts/analysis/analyze_props.py
+```
 
-2. **Error Metrics** (`model_error_comparison.png`)
-   - Shows RMSE and MAE for each model
-   - Lower values indicate better performance
-   - Helps understand the typical prediction error range
+This script:
 
-### Interpreting Predictions
+- Analyzes betting propositions
+- Calculates prediction intervals
+- Determines optimal bet sizing
+- Generates confidence scores
+- Saves analysis to `src/data/analysis/`
 
-- Predictions are most accurate for points and rebounds
-- Typical error ranges:
-  - Points: ±2.31 points
-  - Rebounds: ±1.89 rebounds
-  - Assists: ±1.65 assists
-  - 3-Pointers: ±0.85 threes
+## Understanding Results
+
+### Model Performance
+
+Current model performance metrics:
+
+1. **Points (PTS)**
+   - R² Score: 0.96 (96% accuracy)
+   - RMSE: ±2.31 points
+   - MAE: ±1.75 points
+
+2. **Rebounds (TRB)**
+   - R² Score: 0.89 (89% accuracy)
+   - RMSE: ±1.89 rebounds
+   - MAE: ±1.42 rebounds
+
+3. **Assists (AST)**
+   - R² Score: 0.82 (82% accuracy)
+   - RMSE: ±1.65 assists
+   - MAE: ±1.23 assists
+
+4. **Three-Pointers (3P)**
+   - R² Score: 0.88 (88% accuracy)
+   - RMSE: ±0.85 threes
+   - MAE: ±0.64 threes
+
+### Output Files
+
+1. **Models Directory** (`/models/`)
+   - `{stat}_model_YYYYMMDD.joblib`: Trained models
+   - `{stat}_metrics_YYYYMMDD.json`: Performance metrics
+   - `{stat}_feature_names_YYYYMMDD.joblib`: Selected features
+   - `feature_groups.joblib`: Feature group definitions
+
+2. **Analysis Directory** (`/data/analysis/`)
+   - Historical performance data
+   - Prediction intervals
+   - Confidence scores
+   - Edge calculations
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Missing Dependencies**
+1. **Data Collection Failures**
+   - Check internet connection
+   - Verify website accessibility
+   - Review rate limiting logs
+   - Check retry mechanism logs
+
+2. **Processing Errors**
+   - Verify data file existence
+   - Check file permissions
+   - Monitor memory usage
+   - Review error logs
+
+3. **Model Training Issues**
+   - Check feature completeness
+   - Monitor memory consumption
+   - Review training logs
+   - Verify data quality
+
+### Solutions
+
+1. **Data Collection**
+
    ```bash
-   pip install -r requirements.txt
+   # Check logs
+   tail -f logs/data_collection.log
+   
+   # Retry with increased delay
+   python src/scripts/data_collection/nba_historical_stats_fetcher.py --delay 5
    ```
 
-2. **Data Not Found**
-   - Ensure all directories exist
-   - Run data collection script first
+2. **Processing**
 
-3. **Visualization Errors**
-   - Check if models are trained
-   - Verify matplotlib/seaborn installation
-
-## Best Practices
-
-1. **Regular Updates**
-   - Collect new data weekly
-   - Retrain models monthly
-
-2. **Data Validation**
-   - Check raw data quality
-   - Verify feature engineering output
-
-3. **Performance Monitoring**
-   - Review visualization plots regularly
-   - Track model metrics over time
-
-## Getting Help
-
-- Check the technical documentation for detailed information
-- Review the maintenance guide for system upkeep
-- File issues on the repository for bugs or feature requests
-
-## Quick Start
-
-1. **Setup Environment**
    ```bash
-   # Clone repository
-   git clone https://github.com/yourusername/nba-data-fetcher.git
-   cd nba-data-fetcher
-
-   # Create and activate virtual environment
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-   # Install dependencies
-   pip install -e .
+   # Validate data
+   python src/scripts/preprocessing/validate_data.py
+   
+   # Clean specific files
+   python src/scripts/preprocessing/clean_raw_data.py --file specific_date.csv
    ```
 
-2. **Run the Pipeline**
+3. **Model Training**
 
-   a. **Collect Fresh Data**
    ```bash
-   python src/scripts/data_collection/nba_historical_stats_fetcher.py
+   # Train specific model
+   python src/scripts/modeling/train_and_save_models.py --stat PTS
+   
+   # Review metrics
+   python src/scripts/analysis/review_metrics.py
    ```
-   This fetches the latest NBA player statistics.
-
-   b. **Clean the Data**
-   ```bash
-   python src/scripts/preprocessing/clean_raw_data.py
-   ```
-   This removes duplicates and handles missing values.
-
-   c. **Generate Features**
-   ```bash
-   python src/scripts/preprocessing/feature_engineering.py
-   ```
-   This creates advanced features for model training.
-
-   d. **Train Models**
-   ```bash
-   python src/scripts/modeling/train_models.py
-   ```
-   This trains prediction models for all statistics.
-
-## Understanding the Output
-
-### Model Performance
-After training, you'll find these files in the `models` directory:
-
-1. **Model Files** (`{stat}_model_YYYYMMDD.joblib`)
-   - Trained models that can be loaded for predictions
-   - One file per statistic (PTS, TRB, AST, 3P)
-
-2. **Metrics Files** (`{stat}_metrics_YYYYMMDD.json`)
-   - Contains model performance metrics
-   - Key metrics: RMSE, MAE, R²
-
-### Current Model Performance
-
-- **Points Model**: R² = 0.96
-  - Most important features: FG attempts, games played, usage rate
-
-- **Rebounds Model**: R² = 0.89
-  - Most important features: Defensive rebounds, offensive rebounds, games played ratio
-
-- **Assists Model**: R² = 0.82
-  - Most important features: Assist ratio, minutes played, games played ratio
-
-- **3-Pointers Model**: R² = 0.88
-  - Most important features: Points scored, points per shot, position-relative stats
 
 ## Best Practices
 
 1. **Data Collection**
-   - Run collection during off-peak hours
-   - Respect basketball-reference.com's rate limits
-   - Verify raw data files after collection
+   - Run during off-peak hours
+   - Monitor rate limiting
+   - Check data completeness
+   - Review error logs
 
 2. **Data Processing**
-   - Check cleaned data for missing values
-   - Verify feature engineering outputs
-   - Monitor data types and formats
+   - Validate input data
+   - Check feature distributions
+   - Monitor memory usage
+   - Review output quality
 
 3. **Model Training**
-   - Review log output for warnings
-   - Check feature importance rankings
-   - Compare metrics across models
+   - Review feature importance
+   - Monitor convergence
+   - Check performance metrics
+   - Validate predictions
 
-## Troubleshooting
+4. **Prop Analysis**
+   - Consider uncertainty
+   - Review confidence scores
+   - Check historical accuracy
+   - Monitor edge calculations
 
-### Common Issues
+## Getting Help
 
-1. **Data Collection Fails**
-   - Check internet connection
-   - Verify basketball-reference.com is accessible
-   - Try increasing delay between requests
+1. **Documentation**
+   - Review technical docs in `docs/technical_docs.md`
+   - Check maintenance guide in `docs/maintenance_guide.md`
+   - Read API documentation in `docs/api_docs.md`
 
-2. **Data Processing Errors**
-   - Ensure raw data files exist and are readable
-   - Check for correct column names
-   - Verify data types match expectations
+2. **Support**
+   - File issues on GitHub
+   - Check existing issues
+   - Review pull requests
+   - Contact maintainers
 
-3. **Model Training Issues**
-   - Check for missing or invalid feature values
-   - Verify sufficient memory is available
-   - Review log files for specific error messages
-
-### Getting Help
-
-- Review the technical documentation in `docs/technical_docs.md`
-- Check the codebase on GitHub
-- Submit issues for bugs or feature requests
+3. **Updates**
+   - Check for new releases
+   - Review changelog
+   - Update dependencies
+   - Test new features

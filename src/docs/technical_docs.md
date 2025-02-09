@@ -4,61 +4,90 @@
 
 The NBA Stats Predictor is a machine learning system designed to predict various basketball statistics for NBA players. The system follows a modular pipeline architecture:
 
-1. **Data Collection**: Web scraping of NBA statistics using BeautifulSoup4
-2. **Data Cleaning**: Removal of duplicates and handling of missing values
-3. **Feature Engineering**: Creation of advanced metrics and rolling averages
-4. **Model Training**: Gradient Boosting Regression for multiple statistics
-5. **Visualization**: Performance metrics and model insights
-6. **Prediction**: Real-time predictions using trained models
+1. **Data Collection**: Web scraping with BeautifulSoup4 and robust retry mechanisms
+2. **Data Cleaning**: Preprocessing and standardization of raw data
+3. **Feature Engineering**: Advanced metrics and rolling statistics
+4. **Model Training**: Gradient Boosting with hyperparameter optimization
+5. **Prop Analysis**: Edge calculation with uncertainty quantification
+6. **Visualization**: Performance metrics and model insights
 
 ## Data Pipeline
 
-### Data Collection
-- Uses BeautifulSoup4 for web scraping
-- Implements rate limiting and user-agent rotation
-- Stores raw data in CSV format
+### Data Collection (`nba_historical_stats_fetcher.py`)
+
+- Uses BeautifulSoup4 with retry mechanism and exponential backoff
+- Implements rate limiting detection and handling
+- Rotates user agents automatically
+- Stores raw data in CSV format with metadata
+- Comprehensive error handling and logging
 
 ### Data Cleaning
+
 - Removes duplicate entries
 - Handles missing values through imputation
 - Validates data types and ranges
+- Standardizes column names
 - Output: Clean dataset ready for feature engineering
 
-### Feature Engineering
-- Creates rolling averages for key statistics
-- Generates advanced metrics (efficiency, per-minute stats)
-- Implements position-based features
+### Feature Engineering (`feature_engineering.py`)
+
+- Creates rolling averages with multiple windows (5, 10, 15 games)
+- Generates exponentially weighted moving averages
+- Implements position-based features and percentiles
+- Calculates advanced efficiency metrics
+- Adds season context and matchup features
 - Output: Feature-rich dataset for model training
 
 ## Model Architecture
 
-### Training Pipeline
-- **Algorithm**: Gradient Boosting Regressor
-- **Features**: Combination of raw stats and engineered features
+### Training Pipeline (`train_and_save_models.py`)
+
+- **Algorithm**: Gradient Boosting Regressor with optimized hyperparameters
+- **Feature Selection**: SelectFromModel with importance thresholds
+- **Preprocessing**: StandardScaler and categorical encoding
+- **Cross-validation**: Time series split for temporal validation
 - **Target Variables**: Points (PTS), Rebounds (TRB), Assists (AST), Three-Pointers (3P)
-- **Preprocessing**: StandardScaler for feature normalization
 
 ### Model Performance
 
-Current model performance metrics:
+Current model performance metrics (as of February 9, 2025):
 
-| Statistic | R² Score | RMSE | MAE |
-|-----------|----------|------|-----|
-| Points    | 0.96     | 2.31 | 1.75|
-| Rebounds  | 0.89     | 1.89 | 1.42|
-| Assists   | 0.82     | 1.65 | 1.23|
-| 3-Pointers| 0.88     | 0.85 | 0.64|
+| Statistic     | R² Score | RMSE  | MAE    |
+|--------------|----------|--------|--------|
+| Points       | 0.907    | 0.875  | 0.266  |
+| Rebounds     | 0.815    | 0.670  | 0.169  |
+| Assists      | 0.888    | 0.196  | 0.057  |
+| Three-Points | 0.913    | 0.071  | 0.022  |
 
-## Visualization Components
+For detailed model analysis, feature importance, and performance characteristics, refer to [Model Performance Documentation](model_performance.md).
 
-### Performance Metrics
-- R² Score comparison across models
-- Error metrics (RMSE and MAE) visualization
-- Located in `src/scripts/visualization/model_metrics.py`
+The models demonstrate strong predictive power across all statistics, with the Three-Pointers model showing the highest accuracy (91.3% variance explained). Each model utilizes specialized feature groups including base statistics, rolling averages, and contextual features.
 
-### Generated Plots
-1. `model_r2_comparison.png`: Bar plot of R² scores
-2. `model_error_comparison.png`: Comparison of RMSE and MAE
+Key improvements in this version:
+
+- Optimized feature selection using gradient boosting importance
+- Enhanced preprocessing pipeline with robust scaling
+- Improved handling of categorical variables
+- Reduced training time with optimized number of trials (20)
+- Implementation of mean threshold for feature selection
+
+## Prop Analysis System
+
+### PropAnalyzer Class
+
+- Loads and manages trained models
+- Calculates prediction intervals and uncertainty
+- Implements Kelly criterion for optimal bet sizing
+- Considers historical performance for calibration
+- Generates confidence scores based on multiple factors
+
+### Edge Calculation
+
+- Removes vigorish from odds
+- Accounts for model uncertainty
+- Considers line movements
+- Incorporates historical accuracy
+- Provides confidence scoring
 
 ## File Structure
 
@@ -67,112 +96,58 @@ src/
 ├── data/
 │   ├── raw/          # Raw scraped data
 │   ├── cleaned/      # Cleaned dataset
-│   └── features/     # Feature-engineered data
+│   ├── features/     # Feature-engineered data
+│   └── analysis/     # Prop analysis results
 ├── models/           # Trained models and metrics
 ├── scripts/
-│   ├── data/         # Data processing scripts
-│   ├── modeling/     # Model training scripts
-│   └── visualization/# Visualization scripts
+│   ├── data_collection/  # Data collection scripts
+│   ├── preprocessing/    # Data processing scripts
+│   ├── modeling/        # Model training scripts
+│   └── analysis/       # Prop analysis scripts
 └── docs/            # Documentation
 ```
 
 ## Dependencies
 
-- pandas: Data manipulation
-- scikit-learn: Machine learning
-- matplotlib/seaborn: Visualization
-- beautifulsoup4: Web scraping
-- joblib: Model persistence
+Core dependencies:
+
+- pandas >= 2.2.3: Data manipulation
+- scikit-learn: Machine learning and model training
+- beautifulsoup4 >= 4.13.3: Web scraping
+- requests >= 2.32.3: HTTP requests
+- fake-useragent >= 1.4.0: User agent rotation
+- optuna: Hyperparameter optimization
+- numpy: Numerical computations
 
 ## Performance Optimization
 
 - Efficient data processing through vectorized operations
 - Optimized feature engineering pipeline
-- Model hyperparameter tuning
+- Automated hyperparameter tuning with Optuna
+- Time series cross-validation for robust evaluation
 - Caching of intermediate results
-
-## Architecture Overview
-
-The NBA Stats Predictor is organized into three main components:
-
-### 1. Data Collection (`nba_historical_stats_fetcher.py`)
-- Fetches historical NBA player statistics from basketball-reference.com
-- Uses rotating user agents and request delays to respect the website's rate limits
-- Saves raw data in CSV format to `src/data/raw/`
-
-### 2. Data Processing Pipeline
-#### 2.1 Data Cleaning (`clean_raw_data.py`)
-- Removes duplicates and handles missing values
-- Converts data types and standardizes formats
-- Saves cleaned data to `src/data/cleaned/`
-
-#### 2.2 Feature Engineering (`feature_engineering.py`)
-- Creates advanced features for model training:
-  - **Rolling Averages**: 5-game and 10-game rolling stats
-  - **Position-Based**: Stats relative to position averages
-  - **Efficiency Metrics**: Points per shot, assist ratio, etc.
-  - **Season Context**: Games played ratio, minutes per game
-- Saves engineered features to `src/data/features/`
-
-### 3. Model Training (`train_models.py`)
-- Uses scikit-learn's GradientBoostingRegressor
-- Implements a robust pipeline with:
-  - Missing value imputation
-  - Feature scaling
-  - Model training and evaluation
-- Trains separate models for:
-  - Points (PTS): R² = 0.96
-  - Rebounds (TRB): R² = 0.89
-  - Assists (AST): R² = 0.82
-  - Three Pointers Made (3P): R² = 0.88
-
-## Data Flow
-
-1. **Raw Data Collection**
-   ```
-   basketball-reference.com → nba_historical_stats_fetcher.py → /data/raw/
-   ```
-
-2. **Data Processing**
-   ```
-   /data/raw/ → clean_raw_data.py → /data/cleaned/ → feature_engineering.py → /data/features/
-   ```
-
-3. **Model Training**
-   ```
-   /data/features/ → train_models.py → /models/
-   ```
-
-## Model Architecture
-
-Each prediction model uses a GradientBoostingRegressor with:
-- Mean imputation for missing values
-- StandardScaler for feature normalization
-- Hyperparameters optimized for each statistic
-
-### Key Features by Importance
-- **Points**: FG attempts, games played, usage rate
-- **Rebounds**: Defensive rebounds, offensive rebounds, games played ratio
-- **Assists**: Assist ratio, minutes played, games played ratio
-- **3-Pointers**: Points scored, points per shot, position-relative stats
-
-## Dependencies
-
-Core dependencies:
-- `pandas`: Data manipulation and analysis
-- `scikit-learn`: Model training and evaluation
-- `numpy`: Numerical computations
-- `beautifulsoup4`: Web scraping
-- `fake-useragent`: Web scraping user agent rotation
-- `joblib`: Model persistence
+- Retry mechanisms for robust data collection
 
 ## Output Files
 
 ### Models Directory (`/models/`)
+
 - `{stat}_model_YYYYMMDD.joblib`: Trained models
 - `{stat}_metrics_YYYYMMDD.json`: Performance metrics
+- `{stat}_feature_names_YYYYMMDD.joblib`: Selected features
+- `feature_groups.joblib`: Feature group definitions
 
 ### Data Directory (`/data/`)
+
 - `/raw/`: Original scraped data
-- `/cleaned/`: Cleaned and preprocessed data
-- `/features/`: Engineered features for model training
+- `/cleaned/`: Preprocessed data
+- `/features/`: Engineered features
+- `/analysis/`: Prop analysis results and historical performance
+
+## Error Handling
+
+- Comprehensive logging throughout the pipeline
+- Retry mechanism for failed HTTP requests
+- Validation of data at each processing step
+- Graceful handling of missing data
+- Rate limiting detection and backoff
