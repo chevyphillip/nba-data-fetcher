@@ -1,0 +1,52 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+# Data files
+src/data/raw/*
+src/data/processed/*
+!src/data/raw/.gitkeep
+!src/data/processed/.gitkeep
+
+# Model files
+src/models/*
+!src/models/.gitkeep
+*.h2o
+
+# H2O
+h2ologs/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Environment
+.env
+.python-version
+uv.lock

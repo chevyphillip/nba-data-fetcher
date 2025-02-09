@@ -1,0 +1,20 @@
+[project]
+name = "nba-data-fetcher"
+version = "0.1.0"
+description = "NBA player statistics analysis and prediction pipeline"
+readme = "README.md"
+requires-python = ">=3.11.11"
+dependencies = [
+    "beautifulsoup4>=4.13.3",
+    "pandas>=2.2.3",
+    "requests>=2.32.3",
+    "fake-useragent>=1.4.0",
+    "lxml>=5.1.0",
+    "h2o>=3.46.0.6",
+    "scikit-learn>=1.4.0",
+    "matplotlib>=3.8.2",
+    "seaborn>=0.13.2",
+    "numpy>=1.26.3",
+    "xgboost>=2.0.3",
+    "lightgbm>=4.3.0"
+]
