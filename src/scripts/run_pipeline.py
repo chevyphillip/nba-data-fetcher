@@ -10,17 +10,24 @@ This script runs the complete pipeline:
 """
 
 import os
+import sys
 import logging
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
+import json
 
-from data_collection.nba_historical_stats_fetcher import fetch_nba_stats, save_data
-from preprocessing.clean_raw_data import main as clean_data
-from preprocessing.feature_engineering import main as engineer_features
-from modeling.train_and_save_models import train_and_save_models
-from analysis.prop_analyzer import PropAnalyzer
-from odds.odds_api import OddsAPI
+# Add project root to Python path
+project_root = Path(__file__).parent.parent.parent
+sys.path.append(str(project_root))
+
+# Local imports
+from src.scripts.data_collection.nba_historical_stats_fetcher import fetch_nba_stats
+from src.scripts.preprocessing.clean_raw_data import clean_data, main as clean_data_main
+from src.scripts.preprocessing.feature_engineering import main as engineer_features
+from src.scripts.modeling.train_and_save_models import train_and_save_models
+from src.scripts.analysis.prop_analyzer import PropAnalyzer
+from src.scripts.odds.odds_api import OddsAPI
 
 # Configure logging
 logging.basicConfig(
@@ -47,13 +54,9 @@ def run_data_collection():
     """Run the data collection step."""
     logger.info("Starting data collection...")
     try:
-        master_df = fetch_nba_stats()
-        if master_df is not None:
-            filename = f"nba_player_stats_{datetime.now().strftime('%Y%m%d')}.csv"
-            save_data(master_df, filename)
-            logger.info("Data collection completed successfully")
-        else:
-            raise Exception("No data collected")
+        stats_fetcher = NBAStatsFetcher()
+        stats_fetcher.fetch_stats()
+        logger.info("Data collection completed successfully")
     except Exception as e:
         logger.error(f"Error in data collection: {e}")
         raise
@@ -85,7 +88,7 @@ def run_model_training():
     """Run the model training step."""
     logger.info("Starting model training...")
     try:
-        train_and_save_models()
+        train_models()
         logger.info("Model training completed successfully")
     except Exception as e:
         logger.error(f"Error in model training: {e}")
@@ -106,23 +109,31 @@ def run_prop_analysis():
 
         # Initialize APIs and analyzer
         odds_api = OddsAPI()
-        analyzer = PropAnalyzer()
+        prop_analyzer = PropAnalyzer()
 
         # Fetch props
         logger.info("Fetching props from OddsAPI...")
-        props = odds_api.get_all_props()
+        props = odds_api.fetch_props()
         odds_api.save_props(props)
 
         # Analyze props
         logger.info("Analyzing props...")
-        analyzed_props = analyzer.analyze_props(props, features_df)
+        analyzed_props = prop_analyzer.analyze_props(props, features_df)
 
         # Find best edges
         logger.info("Finding best edges...")
-        best_props = analyzer.find_best_edges(analyzed_props, min_edge=5.0)
+        best_props = prop_analyzer.find_best_edges(analyzed_props, min_edge=5.0)
 
         # Save analysis
-        analyzer.save_analysis(best_props)
+        logger.info("Saving analysis...")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        analysis_dir = project_root / "data" / "analysis"
+        analysis_dir.mkdir(parents=True, exist_ok=True)
+        analysis_file = analysis_dir / f"prop_analysis_{timestamp}.json"
+
+        with open(analysis_file, "w") as f:
+            json.dump(best_props, f, indent=2)
+        logger.info(f"Analysis saved to {analysis_file}")
 
         # Print results
         logger.info("\nTop 10 Props with Best Edges:")
@@ -153,23 +164,74 @@ def run_prop_analysis():
         raise
 
 
-def main():
-    """Run the complete pipeline."""
-    try:
-        # Create necessary directories
-        setup_directories()
+def load_latest_features() -> pd.DataFrame:
+    """Load the latest features file."""
+    features_dir = project_root / "data" / "features"
+    feature_files = list(features_dir.glob("nba_player_stats_features_*.csv"))
+    if not feature_files:
+        raise FileNotFoundError("No feature files found")
 
-        # Run pipeline steps
-        run_data_collection()
-        run_data_cleaning()
-        run_feature_engineering()
-        run_model_training()
-        run_prop_analysis()
+    latest_file = max(feature_files, key=lambda x: x.stat().st_mtime)
+    logger.info(f"Loading features from {latest_file}")
+    return pd.read_csv(latest_file, index_col="Player")
+
+
+def main():
+    """Run the complete NBA stats pipeline."""
+    try:
+        logger.info("Starting NBA stats pipeline...")
+
+        # Step 1: Fetch historical stats
+        logger.info("Fetching historical stats...")
+        master_df = fetch_nba_stats()
+        if master_df is not None:
+            filename = f"nba_player_stats_{datetime.now().strftime('%Y%m%d')}.csv"
+            raw_dir = project_root / "data" / "raw"
+            raw_dir.mkdir(parents=True, exist_ok=True)
+            master_df.to_csv(raw_dir / filename, index=False)
+
+        # Step 2: Clean data
+        logger.info("Cleaning data...")
+        clean_data_main()  # This will load the raw data, clean it, and save it
+
+        # Step 3: Engineer features
+        logger.info("Engineering features...")
+        engineer_features()
+
+        # Step 4: Train models
+        logger.info("Training models...")
+        train_and_save_models()
+
+        # Step 5: Analyze props
+        logger.info("Analyzing props...")
+
+        # Load latest features
+        player_features = load_latest_features()
+
+        # Initialize components
+        odds_api = OddsAPI()
+        prop_analyzer = PropAnalyzer()
+
+        # Fetch and analyze props
+        props = odds_api.get_all_props()
+        if props:
+            analyzed_props = prop_analyzer.analyze_props(props, player_features)
+            logger.info(f"Found {len(analyzed_props)} props with potential edges")
+
+            # Save analysis results
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            analysis_dir = project_root / "data" / "analysis"
+            analysis_dir.mkdir(parents=True, exist_ok=True)
+            analysis_file = analysis_dir / f"prop_analysis_{timestamp}.json"
+
+            with open(analysis_file, "w") as f:
+                json.dump(analyzed_props, f, indent=2)
+            logger.info(f"Analysis saved to {analysis_file}")
 
         logger.info("Pipeline completed successfully!")
 
     except Exception as e:
-        logger.error(f"Pipeline failed: {e}")
+        logger.error(f"Pipeline failed: {str(e)}")
         raise
 
 

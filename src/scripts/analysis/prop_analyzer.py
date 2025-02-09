@@ -7,8 +7,15 @@ from typing import Dict, List, Tuple, Optional
 from datetime import datetime
 from scipy.stats import norm
 from pathlib import Path
+import logging
 
-from src.scripts.modeling.custom_models import ScaledGradientBoostingRegressor
+from ..modeling.custom_models import ScaledGradientBoostingRegressor
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 class PropAnalyzer:

@@ -39,6 +39,52 @@ TARGET_STATS = {
 }
 
 
+def calculate_basic_stats(df: pd.DataFrame) -> pd.DataFrame:
+    """Calculate basic per-game and per-minute statistics."""
+    logger.info("Calculating basic statistics...")
+
+    df_stats = df.copy()
+
+    # Calculate Minutes Per Game (MPG)
+    if all(col in df_stats.columns for col in ["MP", "G"]):
+        df_stats["MPG"] = df_stats["MP"] / df_stats["G"]
+
+    # Calculate per-game statistics
+    per_game_stats = ["PTS", "TRB", "AST", "3P", "FGA", "FTA", "TOV"]
+    for stat in per_game_stats:
+        if stat in df_stats.columns:
+            df_stats[f"{stat}_per_game"] = df_stats[stat] / df_stats["G"]
+
+    # Calculate per-minute statistics
+    per_minute_stats = ["PTS", "TRB", "AST", "3P"]
+    for stat in per_minute_stats:
+        if stat in df_stats.columns:
+            df_stats[f"{stat}_per_minute"] = df_stats[stat] / df_stats["MP"]
+
+    # Calculate Usage Rate
+    if all(
+        col in df_stats.columns for col in ["FGA", "TOV", "FTA", "MP", "Team", "Season"]
+    ):
+        team_poss = df_stats.groupby(["Team", "Season"])["MP"].transform("sum")
+        df_stats["Usage"] = (
+            100
+            * (
+                (df_stats["FGA"] + 0.44 * df_stats["FTA"] + df_stats["TOV"])
+                * (team_poss / df_stats["MP"])
+            )
+            / team_poss
+        )
+
+    # Calculate assist-related metrics
+    if all(col in df_stats.columns for col in ["AST", "MP", "TOV", "Usage"]):
+        df_stats["assists_per_minute"] = df_stats["AST"] / df_stats["MP"]
+        df_stats["assist_to_usage"] = np.where(
+            df_stats["Usage"] > 0, df_stats["AST"] / df_stats["Usage"], 0
+        )
+
+    return df_stats
+
+
 def load_cleaned_data() -> pd.DataFrame:
     """Load the most recent cleaned data file."""
     try:
@@ -368,6 +414,7 @@ def main():
         logger.info(f"Initial data shape: {initial_shape}")
 
         # Apply feature engineering steps
+        df = calculate_basic_stats(df)
         df = add_rolling_averages(df)
         df = add_season_context(df)
         df = add_efficiency_metrics(df)
