@@ -19,6 +19,36 @@ dist/
 # IDE
 .idea/
 .vscode/
+
+# Data files
+*.csv
+*.json
+*.joblib
+*.pkl
+
+# Model files
+src/models/*
+!src/models/.gitkeep
+
+# Data directories
+src/data/raw/*
+!src/data/raw/.gitkeep
+src/data/cleaned/*
+!src/data/cleaned/.gitkeep
+src/data/features/*
+!src/data/features/.gitkeep
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 *.swp
 *.swo
 .DS_Store
