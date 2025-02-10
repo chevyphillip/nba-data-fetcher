@@ -306,7 +306,12 @@ def add_efficiency_metrics(df: pd.DataFrame) -> pd.DataFrame:
 def add_position_features(df: pd.DataFrame) -> pd.DataFrame:
     """Add position-based features."""
     df_pos = df.copy()
-
+    
+    # Create one-hot encoded position columns
+    positions = ['C', 'PF', 'PG', 'SF', 'SG']
+    for pos in positions:
+        df_pos[f'Pos_{pos}'] = df_pos['Pos'].str.contains(pos).astype(int)
+    
     # Calculate position-specific averages and percentiles
     for stat in TARGET_STATS.keys():
         col = TARGET_STATS[stat]["col"]
@@ -402,6 +407,29 @@ def normalize_features(df: pd.DataFrame) -> pd.DataFrame:
     return df_norm
 
 
+def filter_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Filter engineered features to only keep those required by the models."""
+    import joblib
+    
+    # Load feature groups with position features
+    feature_groups = joblib.load('src/models/feature_groups.joblib')
+    required_features = set()
+    for stat, groups in feature_groups.items():
+        for group in groups.values():
+            required_features.update(group)
+    
+    # Always retain position features
+    position_features = [f'Pos_{pos}' for pos in ['C', 'PF', 'PG', 'SF', 'SG']]
+    required_features.update(position_features)
+    
+    # Validation check
+    missing_features = required_features - set(df.columns)
+    if missing_features:
+        raise ValueError(f"Missing required features: {missing_features}")
+    
+    return df[['Player'] + list(required_features)]
+
+
 def main():
     """Main execution function."""
     try:
@@ -421,6 +449,9 @@ def main():
         df = add_position_features(df)
         df = add_matchup_features(df)
         df = normalize_features(df)
+
+        # Filter to only required features
+        df = filter_features(df)
 
         # Save engineered features
         current_date = datetime.now().strftime("%Y%m%d")

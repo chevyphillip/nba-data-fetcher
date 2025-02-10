@@ -25,41 +25,40 @@ Each model utilizes:
 
 ### Points (PTS) Model
 
-- R² Score: 0.907 (90.7% variance explained)
-- RMSE: 0.875
-- MAE: 0.266
-- Key Features: Previous game performance, rolling averages, opponent strength
+- R² Score: 0.710 (71.0% variance explained)
+- RMSE: 1.903
+- MAE: 0.279
+- Key Features: Usage, points_per_shot, usage_rate, PTS_rolling_5g, games_played_ratio
 
 ### Rebounds (TRB) Model
 
-- R² Score: 0.815 (81.5% variance explained)
-- RMSE: 0.670
-- MAE: 0.169
-- Key Features: Historical rebound rates, player position, team rebounding stats
+- R² Score: 0.680 (68.0% variance explained)
+- RMSE: 1.154
+- MAE: 0.230
+- Key Features: TRB_rolling_5g, games_played_ratio
 
 ### Assists (AST) Model
 
-- R² Score: 0.888 (88.8% variance explained)
-- RMSE: 0.196
-- MAE: 0.057
-- Key Features: Usage rate, teammate availability, opponent defensive ratings
+- R² Score: 0.886 (88.6% variance explained)
+- RMSE: 0.197
+- MAE: 0.054
+- Key Features: assist_ratio, AST_rolling_5g, AST_rolling_10g, games_played_ratio
 
 ### Three-Points (3P) Model
 
-- R² Score: 0.913 (91.3% variance explained)
-- RMSE: 0.071
-- MAE: 0.022
-- Key Features: Three-point attempt rate, shooting percentages, defender distance
+- R² Score: 0.189 (18.9% variance explained)
+- RMSE: 0.221
+- MAE: 0.056
+- Key Features: 3P_rolling_5g, 3P_rolling_10g
 
 ## Feature Groups
 
 The models utilize several feature groups stored in `feature_groups.joblib`:
 
 1. Base Statistics: Raw game statistics
-2. Rolling Averages: 3, 5, and 10 game windows
-3. Team Context: Team-specific metrics
-4. Opponent Metrics: Defensive ratings and matchup statistics
-5. Categorical Features: Player position, home/away, etc.
+2. Rolling Averages: 5 and 10 game windows
+3. Other: Derived metrics (usage rate, assist ratio, etc.)
+4. Position: One-hot encoded player positions (C, PF, PG, SF, SG)
 
 ## Model Storage
 
@@ -78,18 +77,20 @@ Models and related files are stored with consistent naming conventions:
 
 ## Strengths
 
-1. High accuracy across all statistics (81.5-91.3% variance explained)
+1. Strong performance in assists prediction (88.6% variance explained)
 2. Robust feature selection process
 3. Efficient training process (20 trials optimization)
 4. Comprehensive preprocessing pipeline
 5. Time series aware validation
+6. Clear separation of position features
 
 ## Limitations
 
-1. Requires complete feature set for predictions
-2. May not capture sudden changes in player roles
-3. Limited handling of rare events (injuries, trades)
-4. Assumes historical patterns predict future performance
+1. Lower accuracy in three-point predictions (18.9% variance explained)
+2. Moderate performance in points and rebounds predictions
+3. May not capture sudden changes in player roles
+4. Limited handling of rare events (injuries, trades)
+5. Assumes historical patterns predict future performance
 
 ## Future Improvements
 

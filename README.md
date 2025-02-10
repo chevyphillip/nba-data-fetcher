@@ -69,10 +69,10 @@ Current model performance metrics (as of February 9, 2025):
 
 | Statistic     | R² Score | RMSE  | MAE    |
 |--------------|----------|--------|--------|
-| Points       | 0.907    | 0.875  | 0.266  |
-| Rebounds     | 0.815    | 0.670  | 0.169  |
-| Assists      | 0.888    | 0.196  | 0.057  |
-| Three-Points | 0.913    | 0.071  | 0.022  |
+| Points       | 0.710    | 1.903  | 0.279  |
+| Rebounds     | 0.680    | 1.154  | 0.230  |
+| Assists      | 0.886    | 0.197  | 0.054  |
+| Three-Points | 0.189    | 0.221  | 0.056  |
 
 For detailed model analysis, see [Model Performance Documentation](src/docs/model_performance.md).
 

@@ -18,7 +18,7 @@ import optuna
 
 def create_feature_groups():
     """Define feature groups for each target statistic."""
-    return {
+    feature_groups = {
         "PTS": {
             "base": [
                 "PTS_per_game",
@@ -109,6 +109,13 @@ def create_feature_groups():
         },
     }
 
+    # Add position features as a separate group for each stat
+    position_features = [f'Pos_{pos}' for pos in ['C', 'PF', 'PG', 'SF', 'SG']]
+    for stat_group in feature_groups.values():
+        stat_group['position'] = position_features.copy()
+
+    return feature_groups
+
 
 def objective(trial, X, y, cv_splits):
     """Optuna objective function for hyperparameter optimization."""
@@ -161,12 +168,13 @@ def train_and_save_models(
 
         # Combine all features for this stat
         feature_cols = (
-            feature_group["base"] + feature_group["rolling"] + feature_group["other"]
+            feature_group["base"] 
+            + feature_group["rolling"] 
+            + feature_group["other"]
         )
-
-        # Add position columns
-        position_cols = ["Pos_C", "Pos_PF", "Pos_PG", "Pos_SF", "Pos_SG"]
-        categorical_cols = [col for col in position_cols if col in df.columns]
+        
+        # Get position features
+        categorical_cols = feature_group["position"]
 
         # Convert boolean columns to float
         bool_cols = [col for col in categorical_cols if df[col].dtype == bool]
