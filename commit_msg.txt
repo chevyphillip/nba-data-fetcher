@@ -1,0 +1,19 @@
+[Cursor] Major refactor and documentation update
+
+Core changes:
+- Refactored PropAnalyzer for better separation of concerns
+- Improved pipeline architecture with clear component boundaries
+- Enhanced error handling and logging throughout
+- Added comprehensive documentation
+
+Documentation updates:
+- Updated technical documentation with latest architecture
+- Enhanced model performance documentation
+- Added detailed validation strategy
+- Improved usage guidelines and best practices
+
+Technical improvements:
+- Streamlined feature engineering pipeline
+- Enhanced props analysis workflow
+- Improved error handling in run_pipeline.py
+- Added better logging throughout the codebase 

@@ -13,13 +13,36 @@ The prediction system uses Gradient Boosting Regressors optimized through Optuna
 
 ## Model Architecture
 
-Each model utilizes:
+### Core Components
 
-- Base Algorithm: Gradient Boosting Regressor
-- Feature Selection: SelectFromModel with mean threshold
-- Preprocessing: StandardScaler for numeric features, OneHotEncoder for categorical features
-- Cross-validation: 5-fold TimeSeriesSplit
-- Hyperparameter Optimization: Optuna with 20 trials
+- **Base Algorithm**: Gradient Boosting Regressor
+- **Feature Selection**: SelectFromModel with mean threshold
+- **Preprocessing**: StandardScaler for numeric features, OneHotEncoder for categorical features
+- **Cross-validation**: 5-fold TimeSeriesSplit
+- **Hyperparameter Optimization**: Optuna with 20 trials
+
+### Feature Groups
+
+Each model utilizes specialized feature groups:
+
+1. **Base Statistics**
+   - Per-game averages
+   - Usage rates
+   - Efficiency metrics
+
+2. **Rolling Statistics**
+   - 5-game window
+   - 10-game window
+   - 15-game window
+
+3. **Position Features**
+   - One-hot encoded positions
+   - Position-specific metrics
+
+4. **Team Context**
+   - Team pace
+   - Team efficiency metrics
+   - Home/Away splits
 
 ## Performance Metrics
 
@@ -28,87 +51,186 @@ Each model utilizes:
 - R² Score: 0.710 (71.0% variance explained)
 - RMSE: 1.903
 - MAE: 0.279
-- Key Features: Usage, points_per_shot, usage_rate, PTS_rolling_5g, games_played_ratio
+- Key Features:
+  - Points per game
+  - Usage rate
+  - True shooting percentage
+  - Rolling averages
+  - Team pace
 
 ### Rebounds (TRB) Model
 
 - R² Score: 0.680 (68.0% variance explained)
 - RMSE: 1.154
 - MAE: 0.230
-- Key Features: TRB_rolling_5g, games_played_ratio
+- Key Features:
+  - Rebounds per game
+  - Minutes played
+  - Position indicators
+  - Team rebounding rate
+  - Rolling averages
 
 ### Assists (AST) Model
 
 - R² Score: 0.886 (88.6% variance explained)
 - RMSE: 0.197
 - MAE: 0.054
-- Key Features: assist_ratio, AST_rolling_5g, AST_rolling_10g, games_played_ratio
+- Key Features:
+  - Assists per game
+  - Usage rate
+  - Team assist rate
+  - Rolling averages
+  - Position indicators
 
 ### Three-Points (3P) Model
 
 - R² Score: 0.189 (18.9% variance explained)
 - RMSE: 0.221
 - MAE: 0.056
-- Key Features: 3P_rolling_5g, 3P_rolling_10g
-
-## Feature Groups
-
-The models utilize several feature groups stored in `feature_groups.joblib`:
-
-1. Base Statistics: Raw game statistics
-2. Rolling Averages: 5 and 10 game windows
-3. Other: Derived metrics (usage rate, assist ratio, etc.)
-4. Position: One-hot encoded player positions (C, PF, PG, SF, SG)
+- Key Features:
+  - Three-point attempts
+  - Three-point percentage
+  - Team pace
+  - Rolling averages
 
 ## Model Storage
 
 Models and related files are stored with consistent naming conventions:
 
-- Models: `{stat}_model_YYYYMMDD.joblib`
-- Metrics: `{stat}_metrics_YYYYMMDD.json`
-- Feature Names: `{stat}_feature_names_YYYYMMDD.joblib`
+```
+src/models/
+├── {stat}_model_YYYYMMDD.joblib       # Trained model pipeline
+├── {stat}_metrics_YYYYMMDD.json       # Performance metrics
+├── {stat}_feature_names_YYYYMMDD.joblib  # Selected features
+└── feature_groups.joblib              # Feature group definitions
+```
 
-## Usage Notes
+## Prediction Pipeline
 
-1. Models are optimized for daily predictions
-2. Feature importance is calculated using the gradient boosting feature importance method
-3. Preprocessing steps are included in the model pipeline for ease of use
-4. Cross-validation ensures robust performance estimates
+1. **Feature Preparation**
+   - Load latest player features
+   - Apply preprocessing transformations
+   - Generate rolling statistics
+
+2. **Model Application**
+   - Load appropriate model for statistic
+   - Generate predictions
+   - Calculate uncertainty estimates
+
+3. **Edge Calculation**
+   - Compare predictions to lines
+   - Calculate edge percentages
+   - Apply Kelly criterion
+   - Generate confidence scores
 
 ## Strengths
 
-1. Strong performance in assists prediction (88.6% variance explained)
-2. Robust feature selection process
-3. Efficient training process (20 trials optimization)
-4. Comprehensive preprocessing pipeline
-5. Time series aware validation
-6. Clear separation of position features
+1. **Assists Model**
+   - Highest accuracy (88.6% variance explained)
+   - Consistent performance across different players
+   - Strong predictive power for primary ball handlers
+
+2. **Points Model**
+   - Good balance of accuracy and coverage
+   - Effective usage of team context
+   - Reliable for high-usage players
+
+3. **Rebounds Model**
+   - Strong position-based predictions
+   - Effective use of team rebounding rates
+   - Good performance for centers and power forwards
 
 ## Limitations
 
-1. Lower accuracy in three-point predictions (18.9% variance explained)
-2. Moderate performance in points and rebounds predictions
-3. May not capture sudden changes in player roles
-4. Limited handling of rare events (injuries, trades)
-5. Assumes historical patterns predict future performance
+1. **Three-Point Model**
+   - Lower accuracy (18.9% variance explained)
+   - High variance in predictions
+   - Sensitive to game script and matchups
 
-## Future Improvements
+2. **General Limitations**
+   - Limited handling of injuries
+   - No direct opponent adjustment
+   - Sensitive to role changes
+   - Limited historical data for new players
 
-1. Feature Engineering
-   - Add more advanced interaction features
-   - Incorporate defensive matchup data
-   - Develop rest day impact features
+## Recent Improvements
 
-2. Model Enhancements
+1. **Feature Engineering**
+   - Added team context features
+   - Improved rolling average calculations
+   - Enhanced position-based features
+   - Added home/away splits
+
+2. **Model Training**
+   - Optimized feature selection
+   - Improved hyperparameter tuning
+   - Enhanced cross-validation strategy
+   - Better handling of categorical variables
+
+3. **Prediction Pipeline**
+   - Added uncertainty estimation
+   - Improved confidence scoring
+   - Enhanced edge calculation
+   - Better handling of missing data
+
+## Future Enhancements
+
+1. **Model Architecture**
    - Experiment with ensemble methods
-   - Implement uncertainty quantification
-   - Add online learning capabilities
-   - Explore deep learning approaches
+   - Implement neural networks for specific cases
+   - Add recurrent layers for time series
+   - Explore transfer learning
 
-3. Validation
+2. **Feature Engineering**
+   - Add defensive matchup features
+   - Implement rest day impact
+   - Add player similarity scores
+   - Include injury history
+
+3. **Prediction Pipeline**
    - Add backtesting capabilities
    - Implement confidence intervals
-   - Develop anomaly detection
+   - Add anomaly detection
+   - Real-time performance monitoring
+
+## Validation Strategy
+
+1. **Time Series Validation**
+   - 5-fold time series cross-validation
+   - Forward-chaining prediction
+   - Out-of-time testing
+
+2. **Performance Monitoring**
+   - Daily prediction tracking
+   - Edge realization analysis
+   - Model drift detection
+   - Feature importance tracking
+
+3. **Quality Checks**
+   - Input data validation
+   - Prediction range checks
+   - Uncertainty estimation
+   - Confidence thresholds
+
+## Usage Guidelines
+
+1. **Best Practices**
+   - Use rolling window predictions
+   - Consider confidence scores
+   - Monitor edge realization
+   - Track model performance
+
+2. **Risk Management**
+   - Apply Kelly criterion
+   - Consider prediction uncertainty
+   - Use confidence thresholds
+   - Monitor bankroll exposure
+
+3. **Monitoring**
+   - Track daily performance
+   - Monitor feature drift
+   - Check prediction distributions
+   - Validate edge realization
 
 ## Version History
 

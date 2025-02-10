@@ -2,152 +2,195 @@
 
 ## Architecture Overview
 
-The NBA Stats Predictor is a machine learning system designed to predict various basketball statistics for NBA players. The system follows a modular pipeline architecture:
+The NBA Stats Predictor is a machine learning system designed to predict various basketball statistics for NBA players. The system follows a modular pipeline architecture with clear separation of concerns:
 
-1. **Data Collection**: Web scraping with BeautifulSoup4 and robust retry mechanisms
-2. **Data Cleaning**: Preprocessing and standardization of raw data
-3. **Feature Engineering**: Advanced metrics and rolling statistics
-4. **Model Training**: Gradient Boosting with hyperparameter optimization
-5. **Prop Analysis**: Edge calculation with uncertainty quantification
-6. **Visualization**: Performance metrics and model insights
+1. **Data Collection**: Automated NBA statistics fetching with error handling
+2. **Data Processing**: Comprehensive cleaning and feature engineering pipeline
+3. **Model Training**: Gradient Boosting models with optimized feature selection
+4. **Props Analysis**: Edge calculation and confidence scoring system
+5. **Pipeline Orchestration**: Centralized pipeline management
 
-## Data Pipeline
+## Pipeline Components
 
 ### Data Collection (`nba_historical_stats_fetcher.py`)
 
-- Uses BeautifulSoup4 with retry mechanism and exponential backoff
-- Implements rate limiting detection and handling
-- Rotates user agents automatically
-- Stores raw data in CSV format with metadata
-- Comprehensive error handling and logging
+- Fetches historical NBA player statistics
+- Implements robust error handling and logging
+- Saves raw data with timestamps for versioning
 
-### Data Cleaning
+### Data Processing
 
-- Removes duplicate entries
-- Handles missing values through imputation
+#### Cleaning (`clean_raw_data.py`)
+
 - Validates data types and ranges
-- Standardizes column names
-- Output: Clean dataset ready for feature engineering
+- Handles missing values through smart imputation
+- Removes duplicates and inconsistencies
+- Standardizes position encoding
+- Implements comprehensive error logging
 
-### Feature Engineering (`feature_engineering.py`)
+#### Feature Engineering (`feature_engineering.py`)
 
-- Creates rolling averages with multiple windows (5, 10, 15 games)
-- Generates exponentially weighted moving averages
-- Implements position-based features and percentiles
-- Calculates advanced efficiency metrics
-- Adds season context and matchup features
-- Output: Feature-rich dataset for model training
+- Calculates rolling averages (5, 10, 15 game windows)
+- Generates advanced basketball metrics
+- Implements position-based features
+- Adds team context features
+- Normalizes features using appropriate scaling methods
 
-## Model Architecture
+### Model Training (`train_and_save_models.py`)
 
-### Training Pipeline (`train_and_save_models.py`)
+- Implements Gradient Boosting with hyperparameter optimization
+- Uses Optuna for automated parameter tuning
+- Performs feature selection with importance thresholds
+- Implements time-series cross-validation
+- Saves models with versioning
 
-- **Algorithm**: Gradient Boosting Regressor with optimized hyperparameters
-- **Feature Selection**: SelectFromModel with importance thresholds
-- **Preprocessing**: StandardScaler and categorical encoding
-- **Cross-validation**: Time series split for temporal validation
-- **Target Variables**: Points (PTS), Rebounds (TRB), Assists (AST), Three-Pointers (3P)
+### Props Analysis
 
-### Model Performance
-
-Current model performance metrics (as of February 9, 2025):
-
-| Statistic     | R² Score | RMSE  | MAE    |
-|--------------|----------|--------|--------|
-| Points       | 0.907    | 0.875  | 0.266  |
-| Rebounds     | 0.815    | 0.670  | 0.169  |
-| Assists      | 0.888    | 0.196  | 0.057  |
-| Three-Points | 0.913    | 0.071  | 0.022  |
-
-For detailed model analysis, feature importance, and performance characteristics, refer to [Model Performance Documentation](model_performance.md).
-
-The models demonstrate strong predictive power across all statistics, with the Three-Pointers model showing the highest accuracy (91.3% variance explained). Each model utilizes specialized feature groups including base statistics, rolling averages, and contextual features.
-
-Key improvements in this version:
-
-- Optimized feature selection using gradient boosting importance
-- Enhanced preprocessing pipeline with robust scaling
-- Improved handling of categorical variables
-- Reduced training time with optimized number of trials (20)
-- Implementation of mean threshold for feature selection
-
-## Prop Analysis System
-
-### PropAnalyzer Class
+#### PropAnalyzer (`prop_analyzer.py`)
 
 - Loads and manages trained models
-- Calculates prediction intervals and uncertainty
-- Implements Kelly criterion for optimal bet sizing
-- Considers historical performance for calibration
-- Generates confidence scores based on multiple factors
-
-### Edge Calculation
-
-- Removes vigorish from odds
-- Accounts for model uncertainty
-- Considers line movements
-- Incorporates historical accuracy
+- Calculates prediction intervals
+- Implements Kelly criterion for bet sizing
 - Provides confidence scoring
+- Handles edge calculation with uncertainty
+
+#### PropsAnalysisRunner (`run_odds_analysis.py`)
+
+- Orchestrates the props analysis workflow
+- Manages feature loading and prop fetching
+- Coordinates analysis and result saving
+- Implements comprehensive error handling
+- Provides detailed logging
+
+### Pipeline Orchestration (`run_pipeline.py`)
+
+- Manages the complete analysis pipeline
+- Creates necessary directory structure
+- Coordinates component execution
+- Implements error handling and logging
+- Provides pipeline status updates
 
 ## File Structure
 
 ```
 src/
 ├── data/
-│   ├── raw/          # Raw scraped data
-│   ├── cleaned/      # Cleaned dataset
-│   ├── features/     # Feature-engineered data
-│   └── analysis/     # Prop analysis results
+│   ├── raw/          # Raw NBA statistics
+│   ├── features/     # Engineered features
+│   └── analysis/     # Props analysis results
 ├── models/           # Trained models and metrics
 ├── scripts/
-│   ├── data_collection/  # Data collection scripts
-│   ├── preprocessing/    # Data processing scripts
-│   ├── modeling/        # Model training scripts
-│   └── analysis/       # Prop analysis scripts
-└── docs/            # Documentation
+│   ├── data_collection/
+│   │   └── nba_historical_stats_fetcher.py
+│   ├── preprocessing/
+│   │   ├── clean_raw_data.py
+│   │   └── feature_engineering.py
+│   ├── modeling/
+│   │   └── train_and_save_models.py
+│   ├── analysis/
+│   │   └── prop_analyzer.py
+│   ├── odds/
+│   │   └── odds_api.py
+│   └── run_pipeline.py
+└── docs/
+    ├── technical_docs.md
+    └── model_performance.md
 ```
+
+## Key Features
+
+### Error Handling and Logging
+
+- Comprehensive logging throughout the pipeline
+- Detailed error messages and stack traces
+- Status updates for long-running processes
+- Pipeline execution validation
+
+### Data Validation
+
+- Input data validation at each step
+- Feature consistency checks
+- Model input validation
+- Props data validation
+
+### Performance Optimization
+
+- Efficient data processing with pandas
+- Optimized feature engineering pipeline
+- Smart caching of intermediate results
+- Parallel processing where applicable
+
+### Model Management
+
+- Version control for models
+- Performance metrics tracking
+- Feature importance analysis
+- Model validation and testing
 
 ## Dependencies
 
-Core dependencies:
+Core dependencies and their purposes:
 
-- pandas >= 2.2.3: Data manipulation
-- scikit-learn: Machine learning and model training
-- beautifulsoup4 >= 4.13.3: Web scraping
-- requests >= 2.32.3: HTTP requests
-- fake-useragent >= 1.4.0: User agent rotation
-- optuna: Hyperparameter optimization
-- numpy: Numerical computations
+```
+pandas>=2.2.3        # Data manipulation and analysis
+scikit-learn>=1.4.0  # Machine learning algorithms
+numpy>=1.26.4        # Numerical computations
+joblib>=1.3.2        # Model serialization
+optuna>=3.5.0        # Hyperparameter optimization
+requests>=2.31.0     # HTTP requests for data fetching
+python-dotenv>=1.0.1 # Environment variable management
+```
 
-## Performance Optimization
+## Configuration
 
-- Efficient data processing through vectorized operations
-- Optimized feature engineering pipeline
-- Automated hyperparameter tuning with Optuna
-- Time series cross-validation for robust evaluation
-- Caching of intermediate results
-- Retry mechanisms for robust data collection
+The system uses environment variables for configuration:
 
-## Output Files
+```
+ODDS_API_KEY=your_key_here  # API key for odds data
+LOG_LEVEL=INFO              # Logging level
+MODEL_DIR=src/models        # Model storage directory
+```
 
-### Models Directory (`/models/`)
+## Error Handling Strategy
 
-- `{stat}_model_YYYYMMDD.joblib`: Trained models
-- `{stat}_metrics_YYYYMMDD.json`: Performance metrics
-- `{stat}_feature_names_YYYYMMDD.joblib`: Selected features
-- `feature_groups.joblib`: Feature group definitions
+1. **Data Collection**
+   - Retries for failed requests
+   - Validation of received data
+   - Logging of failed requests
 
-### Data Directory (`/data/`)
+2. **Data Processing**
+   - Validation of input data
+   - Handling of missing values
+   - Logging of data quality issues
 
-- `/raw/`: Original scraped data
-- `/cleaned/`: Preprocessed data
-- `/features/`: Engineered features
-- `/analysis/`: Prop analysis results and historical performance
+3. **Model Training**
+   - Validation of training data
+   - Monitoring of training metrics
+   - Model performance validation
 
-## Error Handling
+4. **Props Analysis**
+   - Validation of input props
+   - Handling of missing features
+   - Logging of analysis issues
 
-- Comprehensive logging throughout the pipeline
-- Retry mechanism for failed HTTP requests
-- Validation of data at each processing step
-- Graceful handling of missing data
-- Rate limiting detection and backoff
+## Future Improvements
+
+1. **Data Collection**
+   - Add support for real-time updates
+   - Implement more data sources
+   - Add data quality metrics
+
+2. **Feature Engineering**
+   - Add more advanced metrics
+   - Implement feature selection optimization
+   - Add automated feature discovery
+
+3. **Model Training**
+   - Implement ensemble methods
+   - Add online learning capabilities
+   - Improve uncertainty estimation
+
+4. **Props Analysis**
+   - Add more sophisticated edge calculation
+   - Implement portfolio optimization
+   - Add real-time monitoring

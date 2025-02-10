@@ -19,7 +19,6 @@ nba-data-fetcher/
 ├── src/
 │   ├── data/
 │   │   ├── raw/              # Raw NBA statistics data
-│   │   ├── cleaned/          # Cleaned and preprocessed data
 │   │   ├── features/         # Feature-engineered datasets
 │   │   └── analysis/         # Prop analysis results
 │   │
@@ -30,36 +29,27 @@ nba-data-fetcher/
 │   │
 │   ├── docs/               # Documentation
 │   │   ├── technical_docs.md
-│   │   ├── model_performance.md
-│   │   └── data_cleaning_validation_steps.md
+│   │   └── model_performance.md
 │   │
 │   └── scripts/
-│       ├── data_collection/  # Data fetching scripts
+│       ├── data_collection/
 │       │   └── nba_historical_stats_fetcher.py
 │       │
-│       ├── preprocessing/    # Data processing scripts
-│       │   ├── clean_raw_data.py
+│       ├── preprocessing/
 │       │   └── feature_engineering.py
 │       │
-│       ├── modeling/        # Model training scripts
-│       │   ├── train_and_save_models.py
-│       │   └── custom_models.py
+│       ├── modeling/
+│       │   └── train_and_save_models.py
 │       │
-│       ├── analysis/        # Analysis scripts
+│       ├── analysis/
 │       │   └── prop_analyzer.py
 │       │
-│       ├── visualization/   # Visualization tools
-│       │   ├── feature_importance.py
-│       │   ├── model_metrics.py
-│       │   └── model_visualizations.py
-│       │
-│       ├── odds/           # Odds API integration
+│       ├── odds/
 │       │   └── odds_api.py
 │       │
-│       └── run_pipeline.py  # Main pipeline script
+│       └── run_pipeline.py
 │
 ├── requirements.txt        # Python dependencies
-├── pyproject.toml         # Project configuration
 └── .env                   # Environment variables (not in repo)
 ```
 
